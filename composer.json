@@ -1,0 +1,28 @@
+{
+    "name": "futfanatics/fcmlibrary",
+    "description": "Library da api Firebase Cloud Messaging",
+    "keywords": ["api", "library", "psr-3", "traycommerce"],
+    "homepage": "https://github.com/weslleyceresa/fcmlibrary",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Weslley Ceresa",
+            "email": "weslley@fivesdev.com",
+            "homepage": "https://fivesdev.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "FcmLibrary\\": "src/"
+        }
+    },
+    "scripts": {
+        "test": []
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
