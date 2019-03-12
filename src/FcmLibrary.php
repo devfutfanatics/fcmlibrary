@@ -11,6 +11,7 @@ class FcmLibrary {
     
     public function setKey($key){
         $this->key = $key;
+        return $this;
     }
     
     public function getKey(){

@@ -1,4 +1,4 @@
-# Biblioteca Api Forebase Cloud Messaging
+# Biblioteca Api Firebase Cloud Messaging
 Biblioteca PHP v7.2 para manipulação da API do FCM
 
 # Como utilizar
@@ -15,4 +15,8 @@ ini_set('display_errors', 1);
 date_default_timezone_set('America/Sao_Paulo');
 
 $apiFcm = new FcmLibrary();
+
+$apiFcm->setKey("");
+
+$apiFcm->sendToTopic("", "title", "message", $payload = []);
 ```
