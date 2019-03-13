@@ -23,7 +23,9 @@ class FcmLibrary {
             "data" => array(
                 "title" => $title,
                 "body" => $body
-            )
+            ),
+            "content_available" => true,
+            "priority" => "high"
         );
         
         if(is_array($topic)){
