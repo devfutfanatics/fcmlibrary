@@ -36,7 +36,19 @@ class FcmLibrary {
         $data["message"]["android"]["data"] = array_merge($data["message"]["android"]["data"], $payload);
         $data["message"]["apns"]["payload"] = array_merge($data["message"]["apns"]["payload"], $payload);
         
-        return $this->post($data);
+        if(is_string($topic)){
+            $data["message"]["topic"] = $topic;
+            return $this->post($data);
+        }
+        
+        $out = array();
+        
+        foreach($topic as $target){
+            $data["message"]["token"] = $target;
+            $out[] = $this->post($data);
+        }
+        
+        return $out;
     }
     
     private function post($data){
