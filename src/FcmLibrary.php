@@ -52,7 +52,7 @@ class FcmLibrary {
     }
     
     private function post($data){
-        $url = sprinf($this->url, $this->getProjectName());
+        $url = \sprintf($this->url, $this->getProjectName());
         
         $ch = curl_init();
         
