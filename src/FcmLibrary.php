@@ -4,53 +4,54 @@ namespace FcmLibrary;
 class FcmLibrary {
     private $key;
     private $url;
+    private $projectName;
     
     public function __construct() {
-        $this->url = "https://fcm.googleapis.com/fcm/send";
+        $this->url = "https://fcm.googleapis.com/v1/projects/%s/messages:send";
     }
     
-    public function setKey($key){
-        $this->key = $key;
-        return $this;
-    }
-    
-    public function getKey(){
-        return $this->key;
-    }
-    
-    public function sendToTopic($topic, $title, $body, array $payload = array()){        
+    public function sendToTopic($topic, $title, $body, array $payload = array()){          
         $data = array(
-            "data" => array(
-                "title" => $title,
-                "body" => $body
-            ),
-            "content_available" => true,
-            "priority" => "high"
+            "message" => array(
+                "android" => array(
+                    "data" => array(
+                        "title" => $title,
+                        "body" => $body
+                    )
+                ),
+                "apns" => array(
+                    "payload" => array(
+                        "aps" => array(
+                            "alert" => array(
+                                "title" => $title,
+                                "body" => $body
+                            ),
+                            "content-available" => 1
+                        )
+                    )
+                )
+            )
         );
         
-        if(is_array($topic)){
-            $data["registration_ids"] = $topic;
-        }
-        else{
-            $data["to"] = $topic;
-        }        
-        
-        $data["data"] = array_merge($data["data"], $payload);
+        $data["message"]["android"]["data"] = array_merge($data["message"]["android"]["data"], $payload);
+        $data["message"]["apns"]["payload"] = array_merge($data["message"]["apns"]["payload"], $payload);
         
         return $this->post($data);
     }
     
     private function post($data){
+        $url = sprinf($this->url, $this->getProjectName());
+        
         $ch = curl_init();
         
         $header = array(
-            'Authorization: key=' . $this->getKey(),
+            'Authorization: Bearer ' . $this->getKey(),
             'Content-Type: application/json'
         );
         
         $post = json_encode($data);
         
-        curl_setopt($ch, CURLOPT_URL, $this->url);
+        curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
@@ -72,6 +73,24 @@ class FcmLibrary {
             "jsonData" => $jsonRetorno,
             "error" => $this->errorCurl[$curlErrorCode]
         );
+    }
+    
+    public function setKey($key){
+        $this->key = $key;
+        return $this;
+    }
+    
+    public function getKey(){
+        return $this->key;
+    }
+    
+    public function setProjectName($name){
+        $this->projectName = $name;
+        return $this;
+    }
+    
+    public function getProjectName(){
+        return $this->projectName;
     }
     
     private $errorCurl = array(
