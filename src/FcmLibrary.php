@@ -26,8 +26,9 @@ class FcmLibrary {
                                 "title" => $title,
                                 "body" => $body
                             ),
-                            "content-available" => "1",
-                            "category" => "FFNotification"
+                            "content-available" => 1,
+                            "category" => "FFNotification",
+                            "mutable-content" => 1
                         )
                     )
                 )
