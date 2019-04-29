@@ -16,7 +16,9 @@ date_default_timezone_set('America/Sao_Paulo');
 
 $apiFcm = new FcmLibrary();
 
-$apiFcm->setKey("");
+$apiFcm
+    ->setKey("")
+    ->setProjectName("");
 
 $apiFcm->sendToTopic("", "title", "message", $payload = []);
 ```
