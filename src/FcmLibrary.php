@@ -1,16 +1,31 @@
 <?php
 namespace FcmLibrary;
 
+use FcmLibrary\Exceptions\FcmLibraryException;
+use Google_Client;
+use function GuzzleHttp\json_decode;
+use function GuzzleHttp\json_encode;
+
 class FcmLibrary {
-    private $key;
+    private $token;
     private $url;
     private $projectName;
+    private $developerKey;
     
     public function __construct() {
         $this->url = "https://fcm.googleapis.com/v1/projects/%s/messages:send";
     }
     
-    public function sendToTopic($topic, $title, $body, array $payload = array()){          
+    public function sendToTopic($topic, $title, $body, array $payload = array()){
+        if(empty($this->token))
+            throw new FcmLibraryException("Informe o arquivo JSON para gerar token de acesso", FcmLibraryException::TOKEN_EMPTY);
+        
+        if(empty($this->projectName))
+            throw new FcmLibraryException("Informe o nome do projeto do firebase", FcmLibraryException::PROJECT_NAME_EMPTY);
+        
+        if(empty($this->developerKey))
+            throw new FcmLibraryException("Informe o codigo de desenvolvedor", FcmLibraryException::DEVELOPER_KEY_EMPTY);
+        
         $data = array(
             "message" => array(
                 "android" => array(
@@ -53,13 +68,39 @@ class FcmLibrary {
         return $out;
     }
     
+    public function setConfigJson($pathToFileJson){
+        try{
+            $client = new Google_Client();
+            $client->setAuthConfig($pathToFileJson);
+            $client->addScope("https://www.googleapis.com/auth/firebase.messaging");
+            $client->setDeveloperKey("AIzaSyC9CCE4ELxJ7sjx0KOFlhdUKQydtwol9IE");
+            $client->refreshTokenWithAssertion();
+            $data = $client->getAccessToken();        
+            $this->token = $data["access_token"];
+        } catch (Exception $ex) {
+            throw new FcmLibraryException("[Google_Client] Erro ao gerar o token: " . $ex->getMessage(), FcmLibraryException::ERROR_GENERATE_TOKEN);
+        }
+        
+        return $this;
+    }
+    
+    public function setProjectName($name){
+        $this->projectName = $name;
+        return $this;
+    }
+    
+    public function setDeveloperKey($key){
+        $this->developerKey = $key;
+        return $this;
+    }
+    
     private function post($data){
-        $url = \sprintf($this->url, $this->getProjectName());
+        $url = \sprintf($this->url, $this->projectName);
         
         $ch = curl_init();
         
         $header = array(
-            'Authorization: Bearer ' . $this->getKey(),
+            'Authorization: Bearer ' . $this->token,
             'Content-Type: application/json'
         );
         
@@ -87,24 +128,6 @@ class FcmLibrary {
             "jsonData" => $jsonRetorno,
             "error" => $this->errorCurl[$curlErrorCode]
         );
-    }
-    
-    public function setKey($key){
-        $this->key = $key;
-        return $this;
-    }
-    
-    public function getKey(){
-        return $this->key;
-    }
-    
-    public function setProjectName($name){
-        $this->projectName = $name;
-        return $this;
-    }
-    
-    public function getProjectName(){
-        return $this->projectName;
     }
     
     private $errorCurl = array(
