@@ -23,9 +23,6 @@ class FcmLibrary {
         if(empty($this->projectName))
             throw new FcmLibraryException("Informe o nome do projeto do firebase", FcmLibraryException::PROJECT_NAME_EMPTY);
         
-        if(empty($this->developerKey))
-            throw new FcmLibraryException("Informe o codigo de desenvolvedor", FcmLibraryException::DEVELOPER_KEY_EMPTY);
-        
         $data = array(
             "message" => array(
                 "android" => array(
@@ -69,11 +66,14 @@ class FcmLibrary {
     }
     
     public function setConfigJson($pathToFileJson){
+        if(empty($this->developerKey))
+            throw new FcmLibraryException("Informe o codigo de desenvolvedor", FcmLibraryException::DEVELOPER_KEY_EMPTY);        
+        
         try{
             $client = new Google_Client();
             $client->setAuthConfig($pathToFileJson);
             $client->addScope("https://www.googleapis.com/auth/firebase.messaging");
-            $client->setDeveloperKey("AIzaSyC9CCE4ELxJ7sjx0KOFlhdUKQydtwol9IE");
+            $client->setDeveloperKey($this->developerKey);
             $client->refreshTokenWithAssertion();
             $data = $client->getAccessToken();        
             $this->token = $data["access_token"];
