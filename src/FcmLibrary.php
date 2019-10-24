@@ -16,7 +16,7 @@ class FcmLibrary {
         $this->url = "https://fcm.googleapis.com/v1/projects/%s/messages:send";
     }
     
-    public function sendToTopic($topic, $title, $body, array $payload = array()){
+    public function sendToTopic($topic, $title, $body, array $payload = array(), $ttl = null){
         if(empty($this->token))
             throw new FcmLibraryException("Informe o arquivo JSON para gerar token de acesso", FcmLibraryException::TOKEN_EMPTY);
         
@@ -25,7 +25,7 @@ class FcmLibrary {
         
         $data = array(
             "message" => array(
-                "android" => array(
+                "android" => array(                    
                     "data" => array(
                         "title" => $title,
                         "body" => $body
@@ -47,6 +47,21 @@ class FcmLibrary {
             )
         );
         
+        if($ttl){            
+            $dateToTll = new DateTime($ttl);
+            $today = new DateTime();
+            
+            $dateToTll->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+            $today->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+            
+            $interval = $dateToTll->getTimestamp() - $today->getTimestamp();
+            
+            $data["message"]["android"]["ttl"] = $interval;
+            $data["message"]["apns"]["payload"]["aps"]["headers"] = array(
+                "apns-expiration" => $dateToTll->getTimestamp()
+            );
+        }
+        
         $data["message"]["android"]["data"] = array_merge($data["message"]["android"]["data"], $payload);
         $data["message"]["apns"]["payload"] = array_merge($data["message"]["apns"]["payload"], $payload);
         
@@ -67,7 +82,7 @@ class FcmLibrary {
     
     public function setConfigJson($pathToFileJson){
         if(empty($this->developerKey))
-            throw new FcmLibraryException("Informe o codigo de desenvolvedor", FcmLibraryException::DEVELOPER_KEY_EMPTY);        
+            throw new FcmLibraryException("Informe o codigo de desenvolvedor antes de setar o config json", FcmLibraryException::DEVELOPER_KEY_EMPTY);        
         
         try{
             $client = new Google_Client();
