@@ -58,7 +58,7 @@ class FcmLibrary {
             
             $interval = $dateToTll->getTimestamp() - $today->getTimestamp();
             
-            $data["message"]["android"]["ttl"] = $interval;
+            $data["message"]["android"]["ttl"] = $interval."s";
             $data["message"]["apns"]["payload"]["aps"]["headers"] = array(
                 "apns-expiration" => $dateToTll->getTimestamp()
             );
