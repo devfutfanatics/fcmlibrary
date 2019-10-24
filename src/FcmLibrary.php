@@ -57,11 +57,13 @@ class FcmLibrary {
             $today->setTimezone(new DateTimeZone('America/Sao_Paulo'));
             
             $interval = $dateToTll->getTimestamp() - $today->getTimestamp();
-            
-            $data["message"]["android"]["ttl"] = $interval."s";
-            $data["message"]["apns"]["payload"]["aps"]["headers"] = array(
-                "apns-expiration" => $dateToTll->getTimestamp()
-            );
+
+            if($interval > 0){
+                $data["message"]["android"]["ttl"] = $interval."s";
+                $data["message"]["apns"]["headers"] = array(
+                    "apns-expiration" => (string)$dateToTll->getTimestamp()
+                );
+            }
         }
         
         $data["message"]["android"]["data"] = array_merge($data["message"]["android"]["data"], $payload);
