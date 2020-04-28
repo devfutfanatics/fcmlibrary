@@ -14,8 +14,146 @@ class FcmLibrary {
     private $projectName;
     private $developerKey;
     
+    private $to;
+    private $toType;
+    private $title;
+    private $body;
+    private $ttl;
+    
+    const TO_TYPE_CONDITION = "condition";
+    const TO_TYPE_MULTIPLE = "multiple";
+    const TO_TYPE_TOPIC = "topic";
+    
     public function __construct() {
         $this->url = "https://fcm.googleapis.com/v1/projects/%s/messages:send";
+    }
+    
+    public function send(){
+        if(empty($this->token))
+            throw new FcmLibraryException("Informe o arquivo JSON para gerar token de acesso", FcmLibraryException::TOKEN_EMPTY);
+        
+        if(empty($this->projectName))
+            throw new FcmLibraryException("Informe o nome do projeto do firebase", FcmLibraryException::PROJECT_NAME_EMPTY);
+        
+        if(empty($this->to))
+            throw new FcmLibraryException("Informe a destino da notificação", FcmLibraryException::TO_EMPTY);
+        
+        if(empty($this->title))
+            throw new FcmLibraryException("Informe o titulo da notificação", FcmLibraryException::TITLE_EMPTY);
+        
+        if(empty($this->body))
+            throw new FcmLibraryException("Informe o corpo da notificação", FcmLibraryException::BODY_EMPTY);
+        
+        $data = array(
+            "message" => array(
+                "android" => array(                    
+                    "data" => array(
+                        "title" => $this->title,
+                        "body" => $this->body
+                    )
+                ),
+                "apns" => array(
+                    "payload" => array(
+                        "aps" => array(
+                            "alert" => array(
+                                "title" => $this->title,
+                                "body" => $this->body
+                            ),
+                            "content-available" => 1,
+                            "category" => "FFNotification",
+                            "mutable-content" => 1
+                        )
+                    )
+                )
+            )
+        );
+        
+        if($this->ttl){
+            $dateToTll = new DateTime($ttl);
+            $today = new DateTime();
+
+            $dateToTll->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+            $today->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+
+            $interval = $dateToTll->getTimestamp() - $today->getTimestamp();
+
+            if($interval > 0){
+                $data["message"]["android"]["ttl"] = $interval."s";
+                $data["message"]["apns"]["headers"] = array(
+                    "apns-expiration" => (string)$dateToTll->getTimestamp()
+                );
+            }
+        }
+        
+        if($this->payload){
+            $data["message"]["android"]["data"] = array_merge($data["message"]["android"]["data"], $this->payload);
+            $data["message"]["apns"]["payload"] = array_merge($data["message"]["apns"]["payload"], $this->payload);
+        }
+        
+        switch ($this->toType){
+            case self::TO_TYPE_TOPIC:
+                $data["message"]["topic"] = $this->to;                
+                return $this->post($data);
+            break;
+        
+            case self::TO_TYPE_MULTIPLE:                
+                $multipleData = [];
+                
+                foreach($this->to as $token){
+                    $data["message"]["token"] = $token;
+                    $multipleData[] = $data;
+                }
+                                
+                return $this->multiplePost($multipleData);
+            break;
+        
+            case self::TO_TYPE_CONDITION:
+                $data["message"]["condition"] = $this->to;
+                return $this->post($data);
+            break;
+        }
+                
+        throw new FcmLibraryException("Destino da notificação em formato inválido", FcmLibraryException::INVALID_TO_FORMAT);
+    }
+    
+    public function ttl($ttl){
+        $this->ttl = $ttl;
+        return $this;
+    }
+    
+    public function payload(array $payload){
+        $this->payload = $payload;
+        return $this;
+    }
+    
+    public function body($body){
+        $this->body = $body;
+        return $this;
+    }
+    
+    public function title($title){
+        $this->title = $title;
+        return $this;
+    }
+        
+    public function to($to){
+        $this->to = $to;
+        
+        if(is_string($to)){
+            $this->toType = self::TO_TYPE_TOPIC;
+        }
+        
+        if(is_array($this->to)){
+            $this->toType = self::TO_TYPE_MULTIPLE;
+        }
+                
+        return $this;
+    }
+    
+    public function condition($condition){
+        $this->to = $condition;
+        $this->toType = self::TO_TYPE_CONDITION;
+        return $this;
     }
     
     public function sendToTopic($topic, $title, $body, array $payload = array(), $ttl = null){
@@ -74,14 +212,14 @@ class FcmLibrary {
             return $this->post($data);
         }
         
-        $out = array();
+        $multipleData = [];
         
         foreach($topic as $target){
             $data["message"]["token"] = $target;
-            $out[] = $this->post($data);
+            $multipleData[] = $data;
         }
         
-        return $out;
+        return $this->multiplePost($multipleData);
     }
     
     public function setConfigJson($pathToFileJson){
@@ -111,6 +249,64 @@ class FcmLibrary {
     public function setDeveloperKey($key){
         $this->developerKey = $key;
         return $this;
+    }
+    
+    public function multiplePost(array $data){
+        $mh = curl_multi_init();
+        
+        $multiCurl = array();
+        $result = array();
+        
+        foreach($data as $i => $post){            
+            $url = \sprintf($this->url, $this->projectName);
+        
+            $multiCurl[$i] = curl_init();
+
+            $header = array(
+                'Authorization: Bearer ' . $this->token,
+                'Content-Type: application/json'
+            );
+
+            $post = json_encode($post);
+
+            curl_setopt($multiCurl[$i], CURLOPT_URL, $url);
+            curl_setopt($multiCurl[$i], CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($multiCurl[$i], CURLOPT_POSTFIELDS, $post);
+            curl_setopt($multiCurl[$i], CURLOPT_HTTPHEADER, $header);
+            curl_setopt($multiCurl[$i], CURLOPT_SSLVERSION, 1);
+            curl_setopt($multiCurl[$i], CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($multiCurl[$i], CURLOPT_SSL_VERIFYPEER, false);
+
+            curl_multi_add_handle($mh, $multiCurl[$i]);
+        }
+        
+        $index = -1;
+        
+        do {
+          
+            curl_multi_exec($mh, $index);
+          
+        } while($index > 0);
+        
+        foreach($multiCurl as $k => $ch) {            
+            $jsonRetorno = trim(curl_multi_getcontent($ch));
+            $resposta = json_decode($jsonRetorno);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErrorCode = curl_errno($ch);
+
+            $result[$k] =  array(
+                "code" => $code,
+                "data" => $resposta,
+                "jsonData" => $jsonRetorno,
+                "error" => $this->errorCurl[$curlErrorCode]
+            );
+            
+            curl_multi_remove_handle($mh, $ch);
+        }
+        
+        curl_multi_close($mh);
+        
+        return $result;
     }
     
     private function post($data){
