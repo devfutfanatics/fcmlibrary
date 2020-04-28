@@ -20,5 +20,56 @@ $apiFcm->setProjectName("")
     ->setConfigJson("")
     ->setDeveloperKey("");
 
-$apiFcm->sendToTopic("", "title", "message", $payload = []);
+$payload = array(
+    "{key}" => "{value}"//string
+);
+
+$ttl = null;
+
+//or
+
+$ttl = "Y-m-d H:i:s";
+
+$apiFcm->sendToTopic("{topic name}", "{title}", "{body}", $payload, $ttl);
+
+//---- or -----
+
+$firebaseIds = [
+    "FIREBASE DEVICE ID",
+    "FIREBASE DEVICE ID"
+    //...
+];
+
+$apiFcm->sendToTopic($firebaseIds, "{title}", "{body}", $payload, $ttl);
+
+//---- or -----
+
+$apiFcm
+    ->to("{topic name}")
+    ->title("{title}")
+    ->body("{body}")
+    //->payload($payload) optional
+    //->ttl($ttl) optional
+    ->send();
+
+//---- or -----
+
+$apiFcm
+    ->to($firebaseIds)
+    ->title("{title}")
+    ->body("{body}")
+    //->payload($payload) optional
+    //->ttl($ttl) optional
+    ->send();
+
+//---- or -----
+
+$apiFcm
+    ->condition("'stock-GOOG' in topics || 'industry-tech' in topics")
+    ->title("{title}")
+    ->body("{body}")
+    //->payload($payload) optional
+    //->ttl($ttl) optional
+    ->send();
+
 ```
