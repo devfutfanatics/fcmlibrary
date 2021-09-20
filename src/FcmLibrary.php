@@ -5,8 +5,6 @@ use DateTime;
 use DateTimeZone;
 use FcmLibrary\Exceptions\FcmLibraryException;
 use Google_Client;
-use function GuzzleHttp\json_decode;
-use function GuzzleHttp\json_encode;
 
 class FcmLibrary {
     private $token;
